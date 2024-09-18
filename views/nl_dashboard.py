@@ -1,9 +1,11 @@
-import streamlit
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 from pandas.core.groupby import DataFrameGroupBy
 import json
 import httpx
+import io
+from io import BytesIO
 
 st.set_page_config(layout="wide", page_title="Export NL analytics", page_icon="assets/QuixoteLogoVertical.ico")
 
@@ -188,24 +190,45 @@ try:
         overall_analytics_container.subheader("Overall Analytics by Events")
 
         col = overall_analytics_container.columns(6)
+        overall_numbers_dict = {}
+        average_numbers_dict = {}
+        overall_numbers_dict["Figures"] = "Sum"
+        average_numbers_dict["Figures"] = "Average"
 
         total_clicks = len(df[df["event"] == "click"])
         avg_clicks = round(total_clicks / 30, 2)
+        overall_numbers_dict["clicks"] = total_clicks
+        average_numbers_dict["clicks"] = avg_clicks
 
         total_opens = len(df[df["event"] == "open"])
         avg_opens = round(total_opens / 30, 2)
+        overall_numbers_dict["opens"] = total_opens
+        average_numbers_dict["opens"] = avg_opens
 
         total_delivered = len(df[df["event"] == "delivered"])
         avg_delivered = round(total_delivered / 30, 2)
+        overall_numbers_dict["delivered"] = total_delivered
+        average_numbers_dict["delivered"] = avg_delivered
 
         total_deferred = len(df[df["event"] == "deferred"])
         avg_deferred = round(total_deferred / 30, 2)
+        overall_numbers_dict["deferred"] = total_deferred
+        average_numbers_dict["deferred"] = avg_deferred
 
         total_bounced = len(df[df["event"] == "bounce"])
         avg_bounced = round(total_bounced / 30, 2)
+        overall_numbers_dict["bounced"] = total_bounced
+        average_numbers_dict["bounced"] = avg_bounced
 
         total_processed = len(df[df["event"] == "processed"])
         avg_processed = round(total_processed / 30, 2)
+        overall_numbers_dict["processed"] = total_processed
+        average_numbers_dict["processed"] = avg_processed
+
+        overall_num_arr = []
+        overall_num_arr.append(overall_numbers_dict)
+        overall_num_arr.append(average_numbers_dict)
+        overall_num_df = pd.DataFrame(overall_num_arr)
 
         click_percentage = round(total_clicks * 100 / total_opens, 2)
         open_percentage = round(total_opens * 100 / total_processed, 2)
@@ -263,10 +286,29 @@ try:
             ]
             event_select_y = st.selectbox("Select Event", event_list_for_email_analytics)
 
-        with col3[0]:
-            st.bar_chart(email_analytics_df, x="Email", y=event_select_y)
-        with col3[1]:
-            st.area_chart(email_analytics_df.describe(), y=event_select_y)
+        email_bar_fig = px.bar(
+            email_analytics_df,
+            x="Email",
+            y=event_select_y,
+            labels={"Email": "Email", event_select_y: "Event Count"},
+            title="Email Analytics Bar Chart",
+            color_discrete_sequence=["#27BABB"]
+        )
+
+        col3[0].plotly_chart(email_bar_fig, use_container_width=True)
+
+        email_area_fig = px.line(
+            email_analytics_df.describe(),  # Using the described DataFrame
+            y=event_select_y,  # y-axis will be event_select_y
+            labels={event_select_y: "Event Count"},  # Update labels
+            title="Email Analytics Area Chart",
+            line_shape='linear'  # Keep the lines linear for area chart
+        )
+
+        # Fill the area under the line
+        email_area_fig.update_traces(fill='tozeroy', line_color='#38795B')
+
+        col3[1].plotly_chart(email_area_fig, use_container_width=True)
 
         event_analytics_container = st.container(border=True)
         col4 = event_analytics_container.columns(2)
@@ -287,29 +329,37 @@ try:
                 "Total_Processed"
             ]
             event_axis_y = event_analytics_container.selectbox("Select Event to plot", event_list)
-            event_analytics_container.line_chart(event_analytics_df,
-                                                 x="Date",
-                                                 y=event_axis_y,
-                                                 x_label="Sent Date")
-            event_analytics_container.bar_chart(event_analytics_df,
-                                                x="Date",
-                                                y=event_axis_y,
-                                                x_label="Sent Date")
 
-        # st.subheader("Filter Data")
-        # columns = df.columns.tolist()
-        #
-        # selected_column = st.selectbox("Select column to filter by", columns)
-        # unique_values = df[selected_column].unique()
-        # selected_value = st.selectbox("Select a value", unique_values)
-        #
-        # filtered_dataframe = df[df[selected_column] == selected_value]
-        # st.write(filtered_dataframe)
+            line_fig = px.line(
+                event_analytics_df,
+                x="Date",
+                y=event_axis_y,
+                labels={"Date": "Sent Date", event_axis_y: "Event Count"},
+                title="Event Analytics Over Time",
+                color_discrete_sequence=["#27BABB"]
+            )
+            event_analytics_container.plotly_chart(line_fig, use_container_width=True)
+
+            bar_fig = px.bar(
+                event_analytics_df,
+                x="Date",
+                y=event_axis_y,
+                labels={"Date": "Sent Date", event_axis_y: "Event Count"},  # Update labels
+                title="Event Analytics Bar Chart",
+                color_discrete_sequence=["#00429d"]
+            )
+            bar_fig.update_traces(marker=dict(line=dict(width=1, color='DarkSlateGrey')),
+                                  opacity=0.9)
+            bar_fig.update_layout(bargap=0.05)
+            event_analytics_container.plotly_chart(bar_fig, use_container_width=True)
 
         readership_container = st.container(border=True)
         readership_container.subheader("Readership Analytics")
         readership_container_columns = readership_container.columns([2, 1])
         url_df = clicks_aggregator(df)
+        url_df_sorted = url_df.sort_values(by=["click_count"],
+                                           ascending=False,
+                                           ignore_index=True).dropna()
         with readership_container_columns[0]:
             st.write(url_df.sort_values(by=["click_count"],
                                         ascending=False,
@@ -319,9 +369,43 @@ try:
                                         ascending=False,
                                         ignore_index=True).dropna().describe())
 
+        # Creating an Excel file with multiple sheets
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer,
+                            engine='openpyxl') as writer:
+            email_analytics_df.to_excel(writer,
+                                        sheet_name='Email Analytics',
+                                        index=False)
+            email_analytics_df.describe().to_excel(writer,
+                                                   sheet_name='Email Analytics Description',
+                                                   index=True)
+            event_analytics_df.to_excel(writer,
+                                        sheet_name='Event Analytics',
+                                        index=False)
+            overall_num_df.to_excel(writer,
+                                    sheet_name='Overall and Avg',
+                                    index=False)
+            event_analytics_df.describe().to_excel(writer,
+                                                   sheet_name='Event Analytics Description',
+                                                   index=True)
+            url_df_sorted.to_excel(writer,
+                                   sheet_name='Readership',
+                                   index=False)
+
+        # Seek to the beginning of the stream
+        excel_buffer.seek(0)
+
+        # Download button
+        st.download_button(
+            label="Download EXCEL Report",
+            data=excel_buffer,
+            file_name="Overall_analytics_NL_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+
+
 except Exception as e:
     print(f"Exited with Exception {e}")
     st.write(f"Something wrong with the CSV file. "
              f"Are you sure you uploaded the right CSV file?")
-
-

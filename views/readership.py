@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-
+import plotly.express as px
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
@@ -100,7 +100,8 @@ def create_pdf_report(top_articles_df, top_email_df):
         [Paragraph(f"<para>{url}</para>", wrap_style), count]
         for url, count in top_articles_df[["redirect_url", "click_count"]].values.tolist()
     ]
-    article_table = Table(article_data, colWidths=[4 * inch, 1 * inch], hAlign='LEFT')  # Adjust column widths as necessary
+    article_table = Table(article_data, colWidths=[4 * inch, 1 * inch],
+                          hAlign='LEFT')  # Adjust column widths as necessary
 
     article_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), '#d0d0d0'),
@@ -205,17 +206,24 @@ try:
             {"click_count": "sum"}
         ).reset_index()
         top_articles_container.markdown("**Top Articles Read**")
-        top_articles_container.write(grouped_by_redirect_urls.sort_values(by=["click_count"],
-                                                                          ascending=False,
-                                                                          ignore_index=True).dropna())
-        top_articles_container.write(grouped_by_redirect_urls.sort_values(by=["click_count"],
-                                                                          ascending=False,
-                                                                          ignore_index=True).dropna().sum())
-        top_articles_container.bar_chart(grouped_by_redirect_urls,
-                                         x="redirect_url",
-                                         y="click_count",
-                                         x_label="Article",
-                                         y_label="Clicks")
+        top_articles_container.write(grouped_by_redirect_urls.sort_values(
+            by=["click_count"],
+            ascending=False,
+            ignore_index=True).dropna())
+        top_10_grouped_by_redirect_urls = grouped_by_redirect_urls.sort_values(
+            by=["click_count"],
+            ascending=False,
+            ignore_index=True).dropna()
+
+        fig = px.bar(
+            top_10_grouped_by_redirect_urls.head(10),
+            x="click_count",
+            y="redirect_url",
+            labels={"redirect_url": "Article", "click_count": "Clicks"},
+            title="Top 10 Articles",
+            orientation='h'
+        )
+        top_articles_container.plotly_chart(fig, use_container_width=True)
 
         all_clicks_df = df[df["event"] == "click"]
         all_emails = df["email"].tolist()
@@ -260,7 +268,7 @@ try:
         st.download_button(
             label="Download EXCEL Report",
             data=excel_buffer,
-            file_name="analytics_report.xlsx",
+            file_name="Readership_analytics_report.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
@@ -271,7 +279,7 @@ try:
         st.download_button(
             label="Download PDF Report",
             data=pdf_bytes,
-            file_name="analytics_report.pdf",
+            file_name="Readership_analytics_report.pdf",
             mime="application/pdf"
         )
 
