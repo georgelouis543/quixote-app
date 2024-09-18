@@ -1,7 +1,16 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
+
+from reportlab.lib.pagesizes import letter
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Table, TableStyle
+from reportlab.lib.units import inch
+
 from concurrent.futures import ThreadPoolExecutor
 import httpx
+import io
+from io import BytesIO
 
 
 # Function to check the final URL in a synchronous manner
@@ -43,6 +52,98 @@ def clicks_aggregator(input_df):
     print(out_url_arr)
     output_df = pd.DataFrame(out_url_arr)
     return output_df
+
+
+# Function to create the PDF report using ReportLab
+def create_pdf_report(top_articles_df, top_email_df):
+    buffer = BytesIO()
+
+    # Define margins
+    margin_left = 50
+    margin_right = 50
+    margin_top = 50
+    margin_bottom = 50
+
+    # Create PDF document with custom margins
+    doc = SimpleDocTemplate(buffer, pagesize=letter,
+                            rightMargin=margin_right,
+                            leftMargin=margin_left,
+                            topMargin=margin_top,
+                            bottomMargin=margin_bottom)
+
+    # Styles
+    styles = getSampleStyleSheet()
+    title_style = styles['Title']
+    header_style = styles['Heading2']
+    normal_style = styles['BodyText']
+    wrap_style = ParagraphStyle(
+        name='WrapStyle',
+        fontSize=10,
+        leading=12,
+        alignment=1,  # Align center
+        wordWrap='CJK'  # Wrap text for CJK languages; useful for general text wrapping as well
+    )
+
+    # Content
+    content = []
+
+    # Title
+    content.append(Paragraph("Analytics Report", title_style))
+    content.append(Paragraph("<br/><br/>", normal_style))  # Add space
+
+    # Top 10 Articles
+    content.append(Paragraph("Top 10 Articles", header_style))
+    content.append(Paragraph("<br/>", normal_style))  # Add space
+
+    # Prepare data for Top 10 Articles
+    article_data = [["Redirect URL", "Click Count"]] + [
+        [Paragraph(f"<para>{url}</para>", wrap_style), count]
+        for url, count in top_articles_df[["redirect_url", "click_count"]].values.tolist()
+    ]
+    article_table = Table(article_data, colWidths=[4 * inch, 1 * inch], hAlign='LEFT')  # Adjust column widths as necessary
+
+    article_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d0d0d0'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
+        ('ALIGN', (0, 0), (-1, 0), 'LEFT'),  # Align header text left
+        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),  # Align data text left
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),  # Align data text to top
+        ('GRID', (0, 0), (-1, -1), 1, '#000000'),
+        ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
+        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONT', (0, 1), (-1, -1), 'Helvetica'),
+        ('TEXTCOLOR', (0, 1), (-1, -1), '#000000'),
+    ]))
+
+    content.append(article_table)
+    content.append(Paragraph("<br/>", normal_style))  # Add space
+
+    # Top Email Contributors
+    content.append(Paragraph("Top Email Contributors", header_style))
+    content.append(Paragraph("<br/>", normal_style))  # Add space
+
+    # Table for Top Email Contributors
+    email_data = [["Email", "Total Clicks"]] + top_email_df[["email", "total_clicks"]].values.tolist()
+    email_table = Table(email_data, colWidths=[4 * inch, 1 * inch], hAlign='LEFT')  # Adjust column widths as necessary
+    email_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), '#d0d0d0'),
+        ('TEXTCOLOR', (0, 0), (-1, 0), '#000000'),
+        ('ALIGN', (0, 0), (-1, 0), 'LEFT'),  # Align header text left
+        ('ALIGN', (0, 1), (-1, -1), 'LEFT'),  # Align data text left
+        ('VALIGN', (0, 1), (-1, -1), 'TOP'),  # Align data text to top
+        ('GRID', (0, 0), (-1, -1), 1, '#000000'),
+        ('BACKGROUND', (0, 1), (-1, -1), '#f5f5f5'),
+        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONT', (0, 1), (-1, -1), 'Helvetica'),
+        ('TEXTCOLOR', (0, 1), (-1, -1), '#000000'),
+    ]))
+
+    content.append(email_table)
+
+    # Build PDF
+    doc.build(content)
+    buffer.seek(0)
+    return buffer.getvalue()
 
 
 st.set_page_config(layout="wide", page_title="Readership", page_icon="assets/QuixoteLogoVertical.ico")
@@ -133,6 +234,39 @@ try:
         st.write(pd.DataFrame(out_arr).sort_values(by=["total_clicks"],
                                                    ascending=False,
                                                    ignore_index=True))
+
+        email_clicks_df = pd.DataFrame(out_arr).sort_values(by=["total_clicks"],
+                                                            ascending=False,
+                                                            ignore_index=True)
+
+        # Creating an Excel file with multiple sheets
+        excel_buffer = io.BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            url_df.to_excel(writer, sheet_name='Click Analytics', index=False)
+            grouped_by_redirect_urls.to_excel(writer, sheet_name='Article Readership', index=False)
+            email_clicks_df.to_excel(writer, sheet_name='Total Clicks by Email', index=False)
+
+        # Seek to the beginning of the stream
+        excel_buffer.seek(0)
+
+        # Download button
+        st.download_button(
+            label="Download EXCEL Report",
+            data=excel_buffer,
+            file_name="analytics_report.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+        # Create a PDF report
+        pdf_bytes = create_pdf_report(grouped_by_redirect_urls.head(10), email_clicks_df)
+
+        # Download button
+        st.download_button(
+            label="Download PDF Report",
+            data=pdf_bytes,
+            file_name="analytics_report.pdf",
+            mime="application/pdf"
+        )
 
 
 except Exception as e:
