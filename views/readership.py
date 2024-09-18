@@ -241,10 +241,17 @@ try:
 
         # Creating an Excel file with multiple sheets
         excel_buffer = io.BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            url_df.to_excel(writer, sheet_name='Click Analytics', index=False)
-            grouped_by_redirect_urls.to_excel(writer, sheet_name='Article Readership', index=False)
-            email_clicks_df.to_excel(writer, sheet_name='Total Clicks by Email', index=False)
+        with pd.ExcelWriter(excel_buffer,
+                            engine='openpyxl') as writer:
+            url_df.to_excel(writer,
+                            sheet_name='Click Analytics',
+                            index=False)
+            grouped_by_redirect_urls.to_excel(writer,
+                                              sheet_name='Article Readership',
+                                              index=False)
+            email_clicks_df.to_excel(writer,
+                                     sheet_name='Total Clicks by Email',
+                                     index=False)
 
         # Seek to the beginning of the stream
         excel_buffer.seek(0)
