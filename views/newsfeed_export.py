@@ -5,6 +5,7 @@ import pandas as pd
 import io
 
 
+@st.cache_data
 def parse_newsfeed_rss(newsfeed_url: str):
     try:
         response = requests.get(newsfeed_url, timeout=10)
@@ -81,7 +82,15 @@ st.title("Preview and Export your Newsfeed")
 try:
     with st.form("Preview your Newsfeed"):
         rss_url = st.text_input("RSS URL")
-        submit = st.form_submit_button("Preview")
+        form_cols = st.columns(10)
+        with form_cols[0]:
+            submit = st.form_submit_button("Preview")
+        with form_cols[1]:
+            clear = st.form_submit_button("Clear")
+
+    if clear:
+        rss_url = ""
+        newsfeed_items = []
 
     if submit:
         # st.write(rss_url)
@@ -101,7 +110,12 @@ try:
                         padding: 10px; 
                         margin: 10px 0; 
                         border-radius: 5px; 
-                        background-color: #fff;">
+                        background-color: #fff; display: flex;">
+                        <div>
+                        <img src={item['image']} style="width: 150px; padding-right: 15px; 
+                        margin-top: 12px;"/>
+                        </div>
+                        <div>
                             <h4>{item['title'] if item['title'] else 'No title available'}</h4>
                             <p><strong>Description:</strong> {item['description'] if item['description']
                         else 'No description available'}</p>
@@ -111,6 +125,7 @@ try:
                         'No source available'}</p>
                             <a href="{item['link']}" target="_blank" style="color: blue; 
                             text-decoration: underline;">Read more</a>
+                        </div>
                         </div>
                         """, unsafe_allow_html=True
                     )
