@@ -16,6 +16,11 @@ readership_dashboard = st.Page(
     title="Readership",
 )
 
+newsfeed_page = st.Page(
+    page="views/newsfeed_export.py",
+    title="Newsfeed",
+)
+
 about_page = st.Page(
     page="views/about_page.py",
     title="About",
@@ -24,6 +29,7 @@ about_page = st.Page(
 pg = st.navigation(pages=[nl_dashboard,
                           mr_dashboard,
                           readership_dashboard,
+                          newsfeed_page,
                           about_page]
                    )
 
