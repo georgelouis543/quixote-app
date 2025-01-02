@@ -1,6 +1,6 @@
 import streamlit as st
 
-from routers.other_routers import other_test_functions_dashboard
+from routers.other_routers.other_functions_router import other_test_functions_dashboard
 from routers.about_app_routers.about_app_router import about_app_dashboard
 from routers.newsfeed_routers.newsfeed_doc_export_router import newsfeed_article_export_dashboard
 from routers.newsletter_routers.newsletter_article_readership_router import newsletter_article_readership_dashboard
