@@ -39,4 +39,6 @@ def main_navigation_menu():
         about_app_route
     ])
 
-    return nav_list
+    st.logo("assets/QuixoteLogoFinal2.png")
+
+    nav_list.run()
