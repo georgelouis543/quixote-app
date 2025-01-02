@@ -1,38 +1,35 @@
 import streamlit as st
+from streamlit_google_auth import Authenticate
 
-nl_dashboard = st.Page(
-    page="views/nl_dashboard.py",
-    title="Newsletter Analytics",
-    default=True
-)
+from views.navbar import main_navigation_menu
 
-mr_dashboard = st.Page(
-    page="views/mr_dashboard.py",
-    title="Media Relations Analytics",
-)
+# st.title('Welcome to Quixote App. Please Sign in to Proceed')
 
-readership_dashboard = st.Page(
-    page="views/readership.py",
-    title="Readership",
-)
+if 'connected' not in st.session_state:
+    authenticator = Authenticate(
+        secret_credentials_path='google_credentials.json',
+        cookie_name='my_cookie_name',
+        cookie_key='this_is_secret',
+        redirect_uri='http://localhost:8501',
+    )
+    st.session_state["authenticator"] = authenticator
 
-newsfeed_page = st.Page(
-    page="views/newsfeed_export.py",
-    title="Newsfeed",
-)
+# Catch the login event
+st.session_state["authenticator"].check_authentification()
 
-about_page = st.Page(
-    page="views/about_page.py",
-    title="About",
-)
+# Create the login button
+st.session_state["authenticator"].login()
 
-pg = st.navigation(pages=[nl_dashboard,
-                          mr_dashboard,
-                          readership_dashboard,
-                          newsfeed_page,
-                          about_page]
-                   )
+if st.session_state['connected']:
+    # st.image(st.session_state['user_info'].get('picture'))
+    # st.write('Hello, ' + st.session_state['user_info'].get('name'))
+    # st.write('Your email is ' + st.session_state['user_info'].get('email'))
 
-st.logo("assets/QuixoteLogoFinal2.png")
+    pg = main_navigation_menu()
 
-pg.run()
+    st.logo("assets/QuixoteLogoFinal2.png")
+
+    pg.run()
+
+    # if st.button('Log out'):
+    #     st.session_state["authenticator"].logout()

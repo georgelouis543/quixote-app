@@ -111,7 +111,7 @@ try:
                         margin: 10px 0; 
                         border-radius: 5px; 
                         background-color: #fff; display: flex;">
-                        <div>
+                        <div style="width: 150px;">
                         <img src={item['image']} style="width: 150px; padding-right: 15px; 
                         margin-top: 12px;"/>
                         </div>
