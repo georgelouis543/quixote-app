@@ -147,7 +147,7 @@ def create_pdf_report(top_articles_df, top_email_df):
     return buffer.getvalue()
 
 
-st.set_page_config(layout="wide", page_title="Readership", page_icon="assets/QuixoteLogoVertical.ico")
+# st.set_page_config(layout="wide", page_title="Readership", page_icon="assets/QuixoteLogoVertical.ico")
 
 st.title("Readership Analytics Dashboard")
 

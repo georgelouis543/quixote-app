@@ -7,7 +7,7 @@ import httpx
 import io
 from io import BytesIO
 
-st.set_page_config(layout="wide", page_title="Export NL analytics", page_icon="assets/QuixoteLogoVertical.ico")
+# st.set_page_config(layout="wide", page_title="Export NL analytics", page_icon="assets/QuixoteLogoVertical.ico")
 
 st.title('Newsletter Analytics Dashboard')
 

@@ -12,6 +12,7 @@ from routers.newsletter_routers.newsletter_sendgrid_analytics_router import news
 
 
 def main_navigation_menu():
+
     # All newsletter-related routers below
     newsletter_sendgrid_analytics_route = newsletter_sendgrid_analytics_dashboard()
     newsletter_platform_analytics_route = newsletter_platform_overall_analytics_dashboard()

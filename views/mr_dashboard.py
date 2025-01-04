@@ -3,7 +3,7 @@ import pandas as pd
 from pandas.core.groupby import DataFrameGroupBy
 import json
 
-st.set_page_config(layout="wide", page_title="Export NL analytics", page_icon="assets/QuixoteLogoVertical.ico")
+# st.set_page_config(layout="wide", page_title="Export NL analytics", page_icon="assets/QuixoteLogoVertical.ico")
 
 st.title('Media Relations Analytics Dashboard')
 
