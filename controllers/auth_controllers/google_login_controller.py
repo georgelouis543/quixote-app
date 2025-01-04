@@ -19,7 +19,6 @@ def handle_login():
     # Display the login button if the user is not authenticated
     if not st.session_state.get('connected', False):
         authorization_url = authenticator.get_authorization_url()
-        # st.link_button('Login with your Meltwater Account', authorization_url)
         return {
             "connected": False,
             "authorization_url": authorization_url,
@@ -29,20 +28,13 @@ def handle_login():
     # Allow access
     else:
         if str(st.session_state["user_info"].get('email', "abc@email.com")).endswith("meltwater.com"):
-            # main_navigation_menu()
             return {
                 "connected": True,
                 "authorization_url": authorization_url,
                 "is_meltwater_domain": True,
                 "authenticator": authenticator
             }
-            # if st.button('Log out'):
-            #     authenticator.logout()
-            #     streamlit_js_eval(js_expressions="parent.window.location.reload()")
         else:
-            # st.write("User Unauthorized")
-            # if st.button('Log out'):
-            #     authenticator.logout()
             return {
                 "connected": True,
                 "authorization_url": authorization_url,
