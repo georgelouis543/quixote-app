@@ -1,4 +1,5 @@
 import streamlit as st
+from streamlit_js_eval import streamlit_js_eval
 
 from routers.other_routers.other_functions_router import other_test_functions_dashboard
 from routers.about_app_routers.about_app_router import about_app_dashboard
@@ -10,8 +11,10 @@ from routers.media_relations_routers.media_relations_sendgrid_analytics_router i
     media_relations_sendgrid_analytics_dashboard
 from routers.newsletter_routers.newsletter_sendgrid_analytics_router import newsletter_sendgrid_analytics_dashboard
 
+from controllers.auth_controllers.logout_controller import handle_logout
 
-def main_navigation_menu():
+
+def main_navigation_menu(authenticator_from_login_handler):
 
     # All newsletter-related routers below
     newsletter_sendgrid_analytics_route = newsletter_sendgrid_analytics_dashboard()
@@ -43,3 +46,7 @@ def main_navigation_menu():
     st.logo("assets/QuixoteLogoFinal2.png")
 
     nav_list.run()
+
+    if st.sidebar.button('Log Out'):
+        handle_logout(authenticator_from_login_handler)
+        streamlit_js_eval(js_expressions="parent.window.location.reload()")

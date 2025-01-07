@@ -8,19 +8,15 @@ from controllers.auth_controllers.logout_controller import handle_logout
 
 def google_login_view(handle_login_result):
     result_after_login_check = handle_login_result
-
+    print(result_after_login_check)
     if result_after_login_check["connected"] is True and result_after_login_check["is_meltwater_domain"] is True:
 
-        main_navigation_menu()
-
-        if st.button('Log out'):
-            handle_logout(result_after_login_check["authenticator"])
-            streamlit_js_eval(js_expressions="parent.window.location.reload()")
+        main_navigation_menu(result_after_login_check["authenticator"])
 
     elif result_after_login_check["connected"] is True and result_after_login_check["is_meltwater_domain"] is False:
 
         st.write("User Unauthorized! Please use a meltwater Account")
-        if st.button('Log out'):
+        if st.button('Log in again'):
             handle_logout(result_after_login_check["authenticator"])
 
     else:
